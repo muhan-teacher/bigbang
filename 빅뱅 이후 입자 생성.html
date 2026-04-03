@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>빅뱅 입자 생성 게임 (자동 랭킹)</title>
+<style>
+body { font-family: sans-serif; text-align: center; padding: 20px; }
+button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+input { padding: 10px; font-size: 16px; }
+</style>
+</head>
+<body>
+<h2>🌌 빅뱅 입자 생성 게임</h2>
+
+<div id="start">
+<p>이름 입력</p>
+<input type="text" id="username">
+<br>
+<button onclick="startGame()">시작</button>
+</div>
+
+<div id="game" style="display:none;">
+<p id="question"></p>
+<div id="choices"></div>
+<p id="result"></p>
+<p>점수: <span id="score">0</span></p>
+</div>
+
+<div id="end" style="display:none;">
+<h3>게임 종료!</h3>
+<p id="finalScore"></p>
+<button onclick="submitScore()">점수 제출</button>
+<h3>🏆 실시간 랭킹</h3>
+<ul id="ranking"></ul>
+</div>
+
+<script>
+const quiz = [
+{ q: "빅뱅 직후 가장 먼저 생성된 입자는?", a: ["쿼크와 전자", "양성자", "헬륨 원자핵", "수소 원자"], correct: 0 },
+{ q: "쿼크가 결합하여 만들어지는 입자는?", a: ["전자", "양성자와 중성자", "헬륨", "광자"], correct: 1 },
+{ q: "빅뱅 후 약 3분 사이에 생성된 것은?", a: ["헬륨 원자핵", "원자", "별", "은하"], correct: 0 },
+{ q: "원자가 만들어진 시기는?", a: ["3분", "38만 년", "1초", "10억 년"], correct: 1 }
+];
+
+let current = 0;
+let score = 0;
+let username = "";
+
+// ⚠️ 여기에 Apps Script 웹앱 URL 넣기
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxK3f7n4XGS8ovhQy94Cxe9QJ0AU3HRLRepJbfCmtocZwYEotiFimX5UbmZKZ1vqM99Hg/exec";
+
+function startGame() {
+username = document.getElementById('username').value;
+if(!username) return alert('이름 입력');
+document.getElementById('start').style.display = 'none';
+document.getElementById('game').style.display = 'block';
+loadQuestion();
+}
+
+function loadQuestion() {
+const q = quiz[current];
+document.getElementById('question').innerText = q.q;
+const choicesDiv = document.getElementById('choices');
+choicesDiv.innerHTML = '';
+q.a.forEach((choice, i) => {
+const btn = document.createElement('button');
+btn.innerText = choice;
+btn.onclick = () => checkAnswer(i);
+choicesDiv.appendChild(btn);
+});
+}
+
+function checkAnswer(i) {
+if(i === quiz[current].correct) {
+score++;
+document.getElementById('result').innerText = '정답!';
+} else {
+document.getElementById('result').innerText = '오답';
+}
+document.getElementById('score').innerText = score;
+current++;
+
+if(current < quiz.length) {
+setTimeout(loadQuestion, 500);
+} else {
+endGame();
+}
+}
+
+function endGame() {
+document.getElementById('game').style.display = 'none';
+document.getElementById('end').style.display = 'block';
+document.getElementById('finalScore').innerText = `${username}: ${score}점`;
+loadRanking();
+}
+
+// 점수 제출
+function submitScore() {
+fetch(SCRIPT_URL, {
+method: 'POST',
+body: JSON.stringify({ name: username, score: score })
+})
+.then(() => {
+alert('제출 완료!');
+loadRanking();
+});
+}
+
+// 랭킹 불러오기
+function loadRanking() {
+fetch(SCRIPT_URL)
+.then(res => res.json())
+.then(data => {
+const list = document.getElementById('ranking');
+list.innerHTML = '';
+data.forEach((item, index) => {
+const li = document.createElement('li');
+li.innerText = `${index+1}위 - ${item.name} (${item.score}점)`;
+list.appendChild(li);
+});
+});
+}
+</script>
+</body>
+</html>
